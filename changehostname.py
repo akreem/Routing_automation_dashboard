@@ -1,17 +1,14 @@
-from django.shortcuts import render
-
-# Create your views here.
-import requests
-from django.shortcuts import render
 from netmiko import ConnectHandler
+import os
+
 iprouter= input('Router IP : ')
 hostname= input('nouveau Nom :')
 device = {
     'device_type': 'cisco_ios',
     'host': iprouter ,
-    'username': 'amine',
-    'password': 'amine123',
-    'secret': 'amine123',
+    'username': os.environ.get('ROUTER_USERNAME', 'amine'),
+    'password': os.environ.get('ROUTER_PASSWORD', 'amine123'),
+    'secret': os.environ.get('ROUTER_SECRET', 'amine123'),
 }
 net_connect = ConnectHandler(**device)
 net_connect.enable()
@@ -29,7 +26,7 @@ output += net_connect.save_config()
 print(output)
 
 net_connect.disconnect()
-print('Router \"' + device + '\" configured')
+print('Router \"' + hostname + '\" configured')
 print('-'*79)
 
 input("Press ENTER to finish")

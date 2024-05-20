@@ -1,8 +1,8 @@
-Django>=3.0,<4.0;
-djangorestframework;
-psycopg2-binary;
-django-cors-headers;
-django-widget-tweaks;
-requests;
-paramiko;
-netmiko;
+Django>=4.2,<5.0
+djangorestframework
+psycopg2-binary
+django-cors-headers
+django-widget-tweaks
+requests
+paramiko
+netmiko

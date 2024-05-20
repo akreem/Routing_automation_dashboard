@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,12 +21,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-)8+skycpjywb6*ssv(^m^rqk+bwv94@_ttt$(utug4)zicex@u"
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY",
+    "django-insecure-dev-key-change-me",
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() == "true"
 
-ALLOWED_HOSTS = ['localhost','134.209.24.232','20.199.21.250']
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get(
+        "DJANGO_ALLOWED_HOSTS",
+        "localhost,127.0.0.1,134.209.24.232,20.199.21.250",
+    ).split(",")
+    if host.strip()
+]
 
 
 # Application definition
@@ -77,11 +88,11 @@ WSGI_APPLICATION = "pfe.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "akremdb",
-        'USER': 'akrem',
-        'PASSWORD': 'akrempass',
-        'HOST': 'db',
-        'PORT': '5432',
+        "NAME": os.environ.get("POSTGRES_DB", "akremdb"),
+        "USER": os.environ.get("POSTGRES_USER", "akrem"),
+        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "akrempass"),
+        "HOST": os.environ.get("POSTGRES_HOST", "db"),
+        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
     }
 }
 

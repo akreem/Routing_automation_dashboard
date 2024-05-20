@@ -1,3 +1,10 @@
 postgres-data/
-app1/__pycache__/
-pfe/__pycache__/
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv/
+venv/
+db.sqlite3
+staticfiles/
+Thumbs.db

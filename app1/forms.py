@@ -13,7 +13,7 @@ class SignupForm(UserCreationForm):
         # Applying CSS classes to the fields
         self.fields['username'].widget.attrs.update({'class': 'form-control', 'placeholder':'Username'})
         self.fields['password1'].widget.attrs.update({'class': 'form-control', 'placeholder':'Password'})
-        self.fields['password2'].widget.attrs.update({'class': 'form-control', 'placeholder':'Confirm Pasword'})
+        self.fields['password2'].widget.attrs.update({'class': 'form-control', 'placeholder':'Confirm Password'})
 
 class funcform(forms.Form):
     choices = (
@@ -96,16 +96,6 @@ class rip_form(forms.Form):
         # Applying CSS classes to the fields
         self.fields['hostip'].widget.attrs.update({'class': 'form-control'})
         self.fields['network_i'].widget.attrs.update({'class': 'form-control'})
-
-class L3VPNOSPF_form(forms.Form):
-    hostip = forms.CharField(label="hostip",max_length=50)
-    network_i = forms.CharField(label="network_i",max_length=50)
-    def __init__(self, *args, **kwargs):
-        super(L3VPNOSPF_form, self).__init__(*args, **kwargs)
-        # Applying CSS classes to the fields
-        self.fields['hostip'].widget.attrs.update({'class': 'form-control'})
-        self.fields['network_i'].widget.attrs.update({'class': 'form-control'})
-
 
 class L3VPNOSPF_form(forms.Form):
     router_ip = forms.CharField(label="hostip",max_length=50)

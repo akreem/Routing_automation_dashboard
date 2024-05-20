@@ -1,12 +1,13 @@
 from netmiko import ConnectHandler
+import os
 
 iprouter = input('Router IP :' )
 device = {
     'device_type': 'cisco_ios',
     'ip': iprouter,        
-    'username': 'amine',     
-    'password': 'amine123',     
-    'secret': 'secret', 
+    'username': os.environ.get('ROUTER_USERNAME', 'amine'),
+    'password': os.environ.get('ROUTER_PASSWORD', 'amine123'),
+    'secret': os.environ.get('ROUTER_SECRET', 'amine123'),
 }
 
 # Connect to the device

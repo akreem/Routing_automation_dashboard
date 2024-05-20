@@ -1,7 +1,28 @@
-from time import sleep
 from netmiko import ConnectHandler
 import paramiko
+import os
 import time
+
+
+ROUTER_USERNAME = os.environ.get("ROUTER_USERNAME", "amine")
+ROUTER_PASSWORD = os.environ.get("ROUTER_PASSWORD", "amine123")
+ROUTER_SECRET = os.environ.get("ROUTER_SECRET", ROUTER_PASSWORD)
+
+
+def get_cisco_device(host):
+    return {
+        "device_type": "cisco_ios",
+        "host": host,
+        "username": ROUTER_USERNAME,
+        "password": ROUTER_PASSWORD,
+        "secret": ROUTER_SECRET,
+    }
+
+
+def get_router_name(connection):
+    hostname = connection.send_command("show run | i host")
+    parts = hostname.split()
+    return parts[1] if len(parts) > 1 else "unknown"
 
 def HostnameFunc(router_p,verification):
     try:
@@ -10,16 +31,19 @@ def HostnameFunc(router_p,verification):
         # Create an ssh connection and set terminal length 0
         conn = paramiko.SSHClient()
         conn.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        conn.connect(router, username="amine", password="amine123")
+        conn.connect(router, username=ROUTER_USERNAME, password=ROUTER_PASSWORD)
         router_conn = conn.invoke_shell()
         
         print('Successfully connected to %s' % router)
 
         if verification == 'configuration':
-            router_conn.send('show ip running-config\n')
+            router_conn.send('show running-config\n')
 
         elif verification == 'route':
-            router_conn.send('show ip route Running\n')
+            router_conn.send('show ip route\n')
+
+        elif verification == 'interfaces':
+            router_conn.send('show ip interface brief\n')
 
         elif verification == 'vrf':
             router_conn.send('show ip vrf\n')
@@ -34,8 +58,6 @@ def HostnameFunc(router_p,verification):
         return f'An error occurred {e}'
 
 def get_results(hostname):
-    username = "amine"
-    password = "amine123"
     try:
         # Créer un objet SSHClient
         ssh_client = paramiko.SSHClient()
@@ -44,7 +66,12 @@ def get_results(hostname):
         ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         # Se connecter au périphérique
-        ssh_client.connect(hostname, username=username, password=password, timeout=10)
+        ssh_client.connect(
+            hostname,
+            username=ROUTER_USERNAME,
+            password=ROUTER_PASSWORD,
+            timeout=10,
+        )
 
         # Créer un canal SSH
         ssh_channel = ssh_client.invoke_shell()
@@ -69,17 +96,9 @@ def get_results(hostname):
         return str(e)
 
 def eigrpFunc(hostip,eigrpprocid,network_i):
-    device = {
-    'device_type': 'cisco_ios',
-    'host': hostip,
-    'username': 'amine',
-    'password': 'amine123',
-    'secret': 'amine123'
-    }
+    device = get_cisco_device(hostip)
     myssh = ConnectHandler(**device)
-    hostname = myssh.send_command('show run | i host')
-    x = hostname.split()
-    device = x[1]
+    router_name = get_router_name(myssh)
     #eigrpprocid = input('EIGRP Process ID #: ')
     routereigrp = 'router eigrp ' + eigrpprocid
     config_commands = [routereigrp]
@@ -90,20 +109,12 @@ def eigrpFunc(hostip,eigrpprocid,network_i):
     config_commands = [routereigrp,network_e]
     output = myssh.send_config_set(config_commands)
     print(output)
-    return('Router \"' + device + '\" configured')
+    return('Router \"' + router_name + '\" configured')
 
 def ospfFunc(hostip,ospfprocid,network_i,area_id):
-    device = {
-    'device_type': 'cisco_ios',
-    'host': hostip,
-    'username': 'amine',
-    'password': 'amine123',
-    'secret': 'amine123'
-    }
+    device = get_cisco_device(hostip)
     myssh = ConnectHandler(**device)
-    hostname = myssh.send_command('show run | i host')
-    x = hostname.split()
-    device = x[1]
+    router_name = get_router_name(myssh)
     #ospfprocid = input('OSPF Process ID #: ')
     routerospf = 'router ospf ' + ospfprocid
     config_commands = [routerospf]
@@ -115,16 +126,10 @@ def ospfFunc(hostip,ospfprocid,network_i,area_id):
     config_commands = [routerospf,network_e]
     output = myssh.send_config_set(config_commands)
     print(output)
-    return('Router \"' + device + '\" configured')
+    return('Router \"' + router_name + '\" configured')
 
 def changehostnameFunc(iprouter,hostname):
-    device = {
-    'device_type': 'cisco_ios',
-    'host': iprouter ,
-    'username': 'amine',
-    'password': 'amine123',
-    'secret': 'amine123',
-    }
+    device = get_cisco_device(iprouter)
     net_connect = ConnectHandler(**device)
     net_connect.enable()
     nouveau_nom_hote = hostname
@@ -134,16 +139,10 @@ def changehostnameFunc(iprouter,hostname):
     output += net_connect.save_config()
     print(output)
     net_connect.disconnect()
-    return('Router \"' + device + '\" configured')
+    return('Router \"' + hostname + '\" configured')
 
 def set_interfaceFunc(iprouter,interface,description,network,Masque):
-    device = {
-    'device_type': 'cisco_ios',
-    'ip': iprouter,        
-    'username': 'amine',     
-    'password': 'amine123',     
-    'secret': 'secret', 
-    }
+    device = get_cisco_device(iprouter)
     net_connect = ConnectHandler(**device)
     net_connect.enable()
     #interface= input('Interface à configurer: ')
@@ -161,37 +160,21 @@ def set_interfaceFunc(iprouter,interface,description,network,Masque):
 
 
 def rip_Func(hostip,network_i):
-    device = {
-        'device_type': 'cisco_ios',
-        'host': hostip,
-        'username': 'amine',
-        'password': 'amine123',
-        'secret': 'amine123',
-    }
+    device = get_cisco_device(hostip)
     myssh = ConnectHandler(**device)
-    hostname = myssh.send_command('show run | i host')
-    x = hostname.split()
-    device = x[1]
+    router_name = get_router_name(myssh)
 
     routerrip = 'router rip '
     network_e = 'network ' + network_i
     config_commands = [routerrip,
                             network_e]
     output = myssh.send_config_set(config_commands)
-    return output + 'Router \"' + device + '\" configured'
+    return output + 'Router \"' + router_name + '\" configured'
 
 def vrfcreate(hostip,vrf_id,rd_id,rt_id,interface,ip_int,masque):
-    device = {
-        'device_type': 'cisco_ios',
-        'host': hostip,
-        'username': 'amine',
-        'password': 'amine123',
-        'secret': 'amine123',
-    }
+    device = get_cisco_device(hostip)
     myssh = ConnectHandler(**device)
-    hostname = myssh.send_command('show run | i host')
-    x = hostname.split()
-    device = x[1]
+    router_name = get_router_name(myssh)
     vrf = "ip vrf" + " " + vrf_id
     rd = "rd " +" "+ rd_id +':'+ rt_id
     rt = "route-target"+" "+"both"+" "+ rd_id + ":" + rt_id
@@ -201,20 +184,12 @@ def vrfcreate(hostip,vrf_id,rd_id,rt_id,interface,ip_int,masque):
     config_commands = [vrf, rd, rt, inte, int_f, ip_add
                         ]
     output = myssh.send_config_set(config_commands)
-    return output + 'Router \"' + device + '\" configured'
+    return output + 'Router \"' + router_name + '\" configured'
 
 def clientrip(hostip,vrf,network_i):
-    device = {
-        'device_type': 'cisco_ios',
-        'host': hostip,
-        'username': 'amine',
-        'password': 'amine123',
-        'secret': 'amine123',
-    }
+    device = get_cisco_device(hostip)
     myssh = ConnectHandler(**device)
-    hostname = myssh.send_command('show run | i host')
-    x = hostname.split()
-    device = x[1]
+    router_name = get_router_name(myssh)
     routerrip = 'router rip '
     add_f= 'address-family ipv4 vrf'+' '+vrf
     network_e = 'network ' + network_i
@@ -227,21 +202,13 @@ def clientrip(hostip,vrf,network_i):
     config_commands = [routerrip,
                             add_f, network_e, r_b, add_f, red, r_o, red2]
     output = myssh.send_config_set(config_commands)
-    return output + 'Router \"' + device + '\" configured'
+    return output + 'Router \"' + router_name + '\" configured'
 
 def clientospf(hostip,vrf,ospfprocid,network_i,area_id):
-    device = {
-        'device_type': 'cisco_ios',
-        'host': hostip,
-        'username': 'amine',
-        'password': 'amine123',
-        'secret': 'amine123',
-    }
+    device = get_cisco_device(hostip)
 
     myssh = ConnectHandler(**device)
-    hostname = myssh.send_command('show run | i host')
-    x = hostname.split()
-    device = x[1]
+    router_name = get_router_name(myssh)
     routerospf = 'router ospf ' + ospfprocid+" "+"vrf"+" "+vrf
     config_commands = [routerospf
                         ]
@@ -255,22 +222,14 @@ def clientospf(hostip,vrf,ospfprocid,network_i,area_id):
     config_commands = [routerospf,
                             network_e, r_b, add_f, red, r_o, red2]
     output = myssh.send_config_set(config_commands)
-    return output + 'Router \"' + device + '\" configured'
+    return output + 'Router \"' + router_name + '\" configured'
 
 def clienteigrp(hostip,vrf,eigrpprocid):
     #hostip = input('Router IP: ')
-    device = {
-        'device_type': 'cisco_ios',
-        'host': hostip,
-        'username': 'amine',
-        'password': 'amine123',
-        'secret': 'amine123',
-    }
+    device = get_cisco_device(hostip)
 
     myssh = ConnectHandler(**device)
-    hostname = myssh.send_command('show run | i host')
-    x = hostname.split()
-    device = x[1]
+    router_name = get_router_name(myssh)
     #vrf=input("donner le nom de vrf:")
     #eigrpprocid = input('EIGRP ID: ')
     routereigrp = 'router eigrp ' + eigrpprocid
@@ -283,43 +242,27 @@ def clienteigrp(hostip,vrf,eigrpprocid):
     config_commands = [routereigrp,
                                 r_b, add_f, red, r_e,dd_f, red2]
     output = myssh.send_config_set(config_commands)
-    return  output+ 'Router \"' + device + '\" configured'
+    return  output+ 'Router \"' + router_name + '\" configured'
 
 def supp_routage(hostip,p):
-    device = {
-        'device_type': 'cisco_ios',
-        'host': hostip,
-        'username': 'amine',
-        'password': 'amine123',
-        'secret': 'amine123',
-    }
+    device = get_cisco_device(hostip)
 
     myssh = ConnectHandler(**device)
-    hostname = myssh.send_command('show run | i host')
-    x = hostname.split()
-    device = x[1]
+    router_name = get_router_name(myssh)
     sup_p = 'no router ' + p
     config_commands = [sup_p]
     output = myssh.send_config_set(config_commands)
-    return 'Router \"' + device + '\" configured'
+    return 'Router \"' + router_name + '\" configured'
 
 
 def supp_vrf(hostip,vrf):
-    device = {
-        'device_type': 'cisco_ios',
-        'host': hostip,
-        'username': 'amine',
-        'password': 'amine123',
-        'secret': 'amine123',
-    }
+    device = get_cisco_device(hostip)
     myssh = ConnectHandler(**device)
-    hostname = myssh.send_command('show run | i host')
-    x = hostname.split()
-    device = x[1]
+    router_name = get_router_name(myssh)
     sup_vrf = 'no ip vrf ' + vrf
     config_commands = [sup_vrf]
     output = myssh.send_config_set(config_commands)
-    return 'Router \"' + device + '\" configured'
+    return 'Router \"' + router_name + '\" configured'
 
 
 

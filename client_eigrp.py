@@ -1,11 +1,13 @@
 from netmiko import ConnectHandler
+import os
+
 hostip = input('Router IP: ')
 device = {
     'device_type': 'cisco_ios',
     'host': hostip,
-    'username': 'amine',
-    'password': 'amine123',
-    'secret': 'amine123',
+    'username': os.environ.get('ROUTER_USERNAME', 'amine'),
+    'password': os.environ.get('ROUTER_PASSWORD', 'amine123'),
+    'secret': os.environ.get('ROUTER_SECRET', 'amine123'),
 }
 
 myssh = ConnectHandler(**device)
